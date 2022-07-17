@@ -54,9 +54,9 @@ async def main_menu(message):
                 f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
                 f'🛡 <b>defence:</b><em> none</em>\n' \
-                f'🛡 <b>physics:</b><em> {stati[0][0]}</em>\n' \
-                f'🛡 <b>wisdom:</b><em> {stati[0][1]}</em>\n' \
-                f'🛡 <b>intelege:</b><em> {stati[0][2]}</em>\n'
+                f'🛡 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
+                f'🛡 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
+                f'🛡 <b>intelege:</b><em> {format(stati[0][2], ".4f")}</em>\n'
         await bot.send_photo(message.chat.id, photo)
         await bot.send_message(message.chat.id, stats, reply_markup=additional_markup, parse_mode='HTML')
 
@@ -199,13 +199,40 @@ async def deilies_conf(message):
 async def daily_done(message):
     if message.text.strip() == 'Yes':
         db_object.execute(f'SELECT info FROM dailies WHERE id={message.chat.id + 1}')
-        info = db_object.fetchone()[0]
+        info_untouched = db_object.fetchone()[0]
         dlt = 'UPDATE dailies SET accomplishment = 1 WHERE id = %s AND info = %s '
-        info = str(info).strip()
+        info = str(info_untouched).strip()
+        slt = 'SELECT difficulty from dailies WHERE id= %s AND info=%s'
+        db_object.execute(slt, (message.chat.id, info))
+        reward = db_object.fetchone()[0]
+        tp = 'SELECT type FROM dailies WHERE id = %s AND info =%s'
+        db_object.execute(tp, (message.chat.id, info))
+        typik = db_object.fetchone()[0]
+        if typik.strip() == 'physics':
+            reward = random.random() * reward
+            print(reward)
+            upd = 'UPDATE stats SET physics = physics + %s WHERE id = %s'
+            db_object.execute(upd, (reward, message.chat.id))
+            await bot.send_message(message.chat.id, f'Daily completed.\n'
+                                                    f'physics gain : {format(reward,".4f")}', reply_markup=daily_markup)
+        elif typik.strip() == 'wisdom':
+            reward = random.random() * reward
+            print(reward)
+            upd = 'UPDATE stats SET wisdom = wisdom + %s WHERE id = %s'
+            db_object.execute(upd, (reward, message.chat.id))
+            await bot.send_message(message.chat.id, f'Daily completed.\n'
+                                                    f'wisdom gain : {format(reward,".4f")}', reply_markup=daily_markup)
+        else:
+            reward = random.random() * reward
+            print(reward)
+            upd = 'UPDATE stats SET intelligence = intelligence + %s WHERE id = %s'
+            db_object.execute(upd, (reward, message.chat.id))
+            await bot.send_message(message.chat.id, f'Daily completed.\n'
+                                                    f'intelligence gain : {format(reward,".4f")}', reply_markup=daily_markup)
         db_object.execute(dlt, (message.chat.id, info))
         db_object.execute(f'DELETE FROM dailies WHERE id={message.chat.id + 1}')
         db_connection.commit()
-        await bot.send_message(message.chat.id, 'Daily completed ', reply_markup=daily_markup)
+
         await bot.set_state(message.chat.id, States.dailies_main)
     elif message.text.strip() == "No":
         await bot.set_state(message.chat.id, States.dailies_main)
@@ -215,7 +242,7 @@ async def daily_done(message):
 @bot.callback_query_handler(func=None, config=additional_callback.filter())
 async def additional_stats(call: types.CallbackQuery):
     if call.data == 'added:main':
-        db_object.execute(f"SELEпCT nickname,lvl,exp FROM users WHERE id = {call.message.chat.id}")
+        db_object.execute(f"SELECT nickname,lvl,exp FROM users WHERE id = {call.message.chat.id}")
         res = db_object.fetchall()
         rank = res[0][1]
         exp_needed = rank_dict[rank + 1]
@@ -225,9 +252,9 @@ async def additional_stats(call: types.CallbackQuery):
                 f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
                 f'🛡 <b>defence:</b><em> none</em>\n' \
-                f'🛡 <b>physics:</b><em> {stati[0][0]}</em>\n' \
-                f'🛡 <b>wisdom:</b><em> {stati[0][1]}</em>\n' \
-                f'🛡 <b>intelege:</b><em> {stati[0][2]}</em>\n'
+                f'🛡 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
+                f'🛡 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
+                f'🛡 <b>intelege:</b><em> {format(stati[0][2], ".4f")}</em>\n'
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                     text=stats, reply_markup=additional_markup, parse_mode='HTML')
     elif call.data == 'added:currency':
