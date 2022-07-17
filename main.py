@@ -35,7 +35,7 @@ async def creating_a_name(message):
 
     db_object.execute("INSERT INTO users(id,nickname) VALUES(%s,%s)", (chat_id, name))
     db_connection.commit()
-    db_object.execute("INSERT INTO stats(id) VALUES(%s)", (chat_id, ))
+    db_object.execute("INSERT INTO stats(id) VALUES(%s)", (chat_id,))
     db_connection.commit()
     await bot.set_state(message.chat.id, States.main, message.chat.id)
 
@@ -95,12 +95,16 @@ async def dailies_main(message):
         check_deilies_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         db_object.execute(f"SELECT info FROM dailies WHERE id = {message.chat.id} AND accomplishment = 0 ")
         res = db_object.fetchall()
-        for number, value in enumerate(res):
-            button = types.KeyboardButton(f'{value[0].strip()}')
-            check_deilies_markup.add(button)
-        await bot.send_message(message.chat.id, f'Which one have you done?\n',
-                               reply_markup=check_deilies_markup)
-        await bot.set_state(message.chat.id, States.deilies_conf)
+        if res:
+            for number, value in enumerate(res):
+                button = types.KeyboardButton(f'{value[0].strip()}')
+                check_deilies_markup.add(button)
+            await bot.send_message(message.chat.id, f'Which one have you done?\n',
+                                   reply_markup=check_deilies_markup)
+            await bot.set_state(message.chat.id, States.deilies_conf)
+        else:
+            await bot.send_message(message.chat.id, f'no dailies available or everything is done.',
+                                   reply_markup=daily_markup)
     elif message.text.strip() == 'add dailies':
         await bot.send_message(message.chat.id, "What is the commission about?", reply_markup=back_markup)
         await bot.set_state(message.chat.id, States.dailies_adding, chat_id=message.chat.id)
@@ -123,11 +127,11 @@ async def dailies_main(message):
 @bot.message_handler(state=States.deilies_delete)
 async def daily_delete(message):
     slt = 'SELECT info FROM dailies WHERE info = %s'
-    db_object.execute(slt, (message.text.strip(), ))
+    db_object.execute(slt, (message.text.strip(),))
     check = db_object.fetchone()
     if check is not None:
         dlt = 'DELETE FROM dailies WHERE info = %s'
-        db_object.execute(dlt, (message.text.strip(), ))
+        db_object.execute(dlt, (message.text.strip(),))
         db_connection.commit()
         await bot.send_message(message.chat.id, text='daily has been successfully deleted', reply_markup=daily_markup)
         await bot.set_state(chat_id=message.chat.id, state=States.dailies_main, user_id=message.chat.id)
@@ -145,9 +149,13 @@ async def daily_delete(message):
 
 @bot.message_handler(state=States.dailies_adding)
 async def daily_adding(message):
-    db_object.execute("INSERT INTO dailies(id,info) VALUES(%s,%s)", (1, message.text))
-    db_connection.commit()
-    await bot.send_message(message.chat.id, 'What is the type of the daily', reply_markup=types_markup)
+    if message.text == '🚪Back':
+        await bot.send_message(message.chat.id, "returned to dailies main", reply_markup=daily_markup)
+        await bot.set_state(message.chat.id, States.dailies_main, message.chat.id)
+    else:
+        db_object.execute("INSERT INTO dailies(id,info) VALUES(%s,%s)", (1, message.text))
+        db_connection.commit()
+        await bot.send_message(message.chat.id, 'What is the type of the daily', reply_markup=types_markup)
 
 
 @bot.callback_query_handler(func=None, config=types_callback.filter())
@@ -214,21 +222,23 @@ async def daily_done(message):
             upd = 'UPDATE stats SET physics = physics + %s WHERE id = %s'
             db_object.execute(upd, (reward, message.chat.id))
             await bot.send_message(message.chat.id, f'Daily completed.\n'
-                                                    f'physics gain : {format(reward,".4f")}', reply_markup=daily_markup)
+                                                    f'physics gain : {format(reward, ".4f")}',
+                                   reply_markup=daily_markup)
         elif typik.strip() == 'wisdom':
             reward = random.random() * reward
             print(reward)
             upd = 'UPDATE stats SET wisdom = wisdom + %s WHERE id = %s'
             db_object.execute(upd, (reward, message.chat.id))
             await bot.send_message(message.chat.id, f'Daily completed.\n'
-                                                    f'wisdom gain : {format(reward,".4f")}', reply_markup=daily_markup)
+                                                    f'wisdom gain : {format(reward, ".4f")}', reply_markup=daily_markup)
         else:
             reward = random.random() * reward
             print(reward)
             upd = 'UPDATE stats SET intelligence = intelligence + %s WHERE id = %s'
             db_object.execute(upd, (reward, message.chat.id))
             await bot.send_message(message.chat.id, f'Daily completed.\n'
-                                                    f'intelligence gain : {format(reward,".4f")}', reply_markup=daily_markup)
+                                                    f'intelligence gain : {format(reward, ".4f")}',
+                                   reply_markup=daily_markup)
         db_object.execute(dlt, (message.chat.id, info))
         db_object.execute(f'DELETE FROM dailies WHERE id={message.chat.id + 1}')
         db_connection.commit()
