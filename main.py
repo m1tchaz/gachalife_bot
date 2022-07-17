@@ -56,7 +56,7 @@ async def main_menu(message):
                 f'🛡 <b>defence:</b><em> none</em>\n' \
                 f'🛡 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
                 f'🛡 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
-                f'🛡 <b>intelege:</b><em> {format(stati[0][2], ".4f")}</em>\n'
+                f'🛡 <b>intelligence:</b><em> {format(stati[0][2], ".4f")}</em>\n'
         await bot.send_photo(message.chat.id, photo)
         await bot.send_message(message.chat.id, stats, reply_markup=additional_markup, parse_mode='HTML')
 
