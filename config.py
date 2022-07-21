@@ -16,6 +16,5 @@ DB_URI = 'postgres://mfqieqdxflknqf:789cf483df8013c1caf305e1dbd345923ebb795c818e
          'e8b900@ec2-52-54-212-232.compute-1.amazonaws.com:5432/d6bgik450kutrb'
 
 bot = AsyncTeleBot(API_KEY, state_storage=StateMemoryStorage())
-
 db_connection = psycopg2.connect(DB_URI, sslmode='require')
 db_object = db_connection.cursor()
