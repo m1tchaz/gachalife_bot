@@ -61,7 +61,7 @@ async def main_menu(message):
         await bot.send_photo(message.chat.id, photo)
         await bot.send_message(message.chat.id, stats, reply_markup=additional_markup, parse_mode='HTML')
 
-    elif message.text.strip() == 'something ❗':
+    elif message.text.strip() == 'village ❗':
         await bot.send_message(message.chat.id, 'nothing is here yet...', reply_markup=main_markup)
 
     elif message.text.strip() == 'wishing 🛐':
@@ -80,13 +80,19 @@ async def main_menu(message):
 
     elif message.text.strip() == 'commissions ⚛':
         dailies = ''
-        db_object.execute(f'SELECT info FROM dailies WHERE id={message.chat.id} AND accomplishment=0 ')
-        res = db_object.fetchall()
-        db_object.execute(f'SELECT type FROM dailies WHERE id={message.chat.id} AND accomplishment=0 ')
-        typiki = db_object.fetchall()
-        for number, value in enumerate(res):
-            dailies += f'{number + 1}. ' + str(value[0]).strip() + f' [{typiki[number][0].strip()}]' + '\n'
-        await bot.send_message(message.chat.id, f'list of uncompleted dailies :\n{dailies}', reply_markup=daily_markup)
+        typiki = ['physics', 'wisdom', 'intelligence']
+        cool_typiki = ['💪physics', '🎩wisdom', '🧠intelligence']
+        count = 0
+        for value in typiki:
+            dailies_list = ''
+            slt = f'SELECT info FROM dailies WHERE id=%s AND accomplishment=0 AND type=%s'
+            db_object.execute(slt, (message.chat.id, value))
+            res = db_object.fetchall()
+            for number, result in enumerate(res):
+                dailies_list += f'{number + 1}.' + f' {result[0]}'
+            dailies += f'{cool_typiki[count]}:\n' + dailies_list + '\n'
+            count += 1
+        await bot.send_message(message.chat.id, f'list of uncompleted dailies \n\n{dailies}', reply_markup=daily_markup)
         await bot.set_state(message.chat.id, States.dailies_main, chat_id=message.chat.id)
 
 
@@ -185,7 +191,7 @@ async def daily_diff(call: types.CallbackQuery):
     db_object.execute("INSERT INTO dailies(id,info,type,difficulty) VALUES(%s,%s,%s,%s)",
                       (call.message.chat.id, info, type, call.data[5]))
     count_upd = 'UPDATE users SET daily = daily + 1 WHERE id = %s'
-    db_object.execute(count_upd, (call.message.chat.id, ))
+    db_object.execute(count_upd, (call.message.chat.id,))
 
     db_object.execute(f'DELETE FROM dailies WHERE id=1')
     db_connection.commit()
@@ -212,7 +218,7 @@ async def deilies_conf(message):
 async def daily_done(message):
     if message.text.strip() == 'Yes':
         slt_1 = 'SELECT info FROM dailies WHERE id=%s'
-        db_object.execute(slt_1, (message.chat.id + 1, ))
+        db_object.execute(slt_1, (message.chat.id + 1,))
         info_untouched = db_object.fetchone()[0]
         info = str(info_untouched).strip()
         slt = 'SELECT difficulty from dailies WHERE id= %s AND info= %s'
@@ -225,11 +231,11 @@ async def daily_done(message):
         db_object.execute(upd, (reward * 200, message.chat.id))
         new_exp = db_object.fetchall()[0][0]
         lvl_slt = 'SELECT lvl FROM users WHERE id= %s'
-        db_object.execute(lvl_slt, (message.chat.id, ))
+        db_object.execute(lvl_slt, (message.chat.id,))
         lvl = db_object.fetchone()[0]
         while new_exp > rank_dict[lvl + 1]:
             upd_lvl = 'UPDATE users SET lvl = lvl + 1 WHERE id= %s'
-            db_object.execute(upd_lvl, (message.chat.id, ))
+            db_object.execute(upd_lvl, (message.chat.id,))
             new_exp = new_exp - rank_dict[lvl + 1]
             upd_exp = 'UPDATE users set exp = %s WHERE id = %s'
             db_object.execute(upd_exp, (new_exp, message.chat.id))
@@ -239,7 +245,7 @@ async def daily_done(message):
         db_object.execute(money_upd, (primo_reward, message.chat.id))
         stat_reward = random.random() * reward
         daily_count = 'SELECT daily FROM users WHERE id = %s'
-        db_object.execute(daily_count, (message.chat.id, ))
+        db_object.execute(daily_count, (message.chat.id,))
         energy_count = 100 / db_object.fetchone()[0]
         energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy < 1000'
         db_object.execute(energy_update, (energy_count, message.chat.id))
@@ -343,56 +349,77 @@ async def banner_choose(call: types.CallbackQuery):
 async def wishing(call: types.CallbackQuery):
     await bot.answer_callback_query(call.id, cache_time=5)
     if call.data == 'banner1:roll':
-        drop = open('images\drop.jpg', 'rb')
-        outcome = wish_processing('primogems')
-        reward = wish_reward('primogems', outcome)
-        db_object.execute(f'SELECT nickname FROM users WHERE id={call.from_user.id}')
-        nickname = db_object.fetchone()[0].strip()
-        if outcome == 5:
-            animation = open('images/video/5starpull.mp4', 'rb')
-            msg5 = await bot.edit_message_media(chat_id=call.message.chat.id,
-                                                message_id=call.message.id,
-                                                media=types.InputMedia(type='animation', media=animation))
-            await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
-                                           message_id=msg5.message_id)
-            await asyncio.sleep(7)
-            msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
+        slt = 'SELECT primogems FROM users WHERE id=%s'
+        db_object.execute(slt, (call.message.chat.id,))
+        if db_object.fetchone()[0] > 20:
+            upd = 'UPDATE users SET primogems = primogems - 20 WHERE id= %s'
+            db_object.execute(upd, (call.message.chat.id,))
+            upd = 'UPDATE users SET dust = dust + 15 WHERE id= %s'
+            db_object.execute(upd, (call.message.chat.id,))
+            drop = open('images\drop.jpg', 'rb')
+            outcome = wish_processing('primogems')
+            reward = wish_reward('primogems', outcome)
+            db_object.execute(f'SELECT nickname FROM users WHERE id={call.from_user.id}')
+            nickname = db_object.fetchone()[0].strip()
+            if outcome == 5:
+                animation = open('images/video/5starpull.mp4', 'rb')
+                msg5 = await bot.edit_message_media(chat_id=call.message.chat.id,
+                                                    message_id=call.message.id,
+                                                    media=types.InputMedia(type='animation', media=animation))
+                await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
                                                message_id=msg5.message_id)
-            await bot.edit_message_caption(caption=f'You got {reward}', chat_id=call.from_user.id,
-                                           message_id=msg.message_id, reply_markup=primo_banner_markup)
-            db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)', (reward, call.from_user.id,
-                                                                                           outcome))
-            db_connection.commit()
-        elif outcome == 4:
-            animation = open('images/video/4starpull.mp4', 'rb')
-            msg4 = await bot.edit_message_media(chat_id=call.message.chat.id,
-                                                message_id=call.message.id,
-                                                media=types.InputMedia(type='animation', media=animation))
-            await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
-                                           message_id=msg4.message_id)
-            await asyncio.sleep(7)
-            msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
+                await asyncio.sleep(7)
+                msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
+                                                   message_id=msg5.message_id)
+                await bot.edit_message_caption(caption=f'You got {reward}\n'
+                                                       f'and a little of 15 dust', chat_id=call.from_user.id,
+                                               message_id=msg.message_id, reply_markup=primo_banner_markup)
+                db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)',
+                                  (reward, call.from_user.id,
+                                   outcome))
+                db_connection.commit()
+            elif outcome == 4:
+                animation = open('images/video/4starpull.mp4', 'rb')
+                msg4 = await bot.edit_message_media(chat_id=call.message.chat.id,
+                                                    message_id=call.message.id,
+                                                    media=types.InputMedia(type='animation', media=animation))
+                await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
                                                message_id=msg4.message_id)
-            await bot.edit_message_caption(caption=f'You got {reward}', chat_id=call.from_user.id,
-                                           message_id=msg.message_id, reply_markup=primo_banner_markup)
-            db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)', (reward, call.from_user.id,
-                                                                                           outcome))
-            db_connection.commit()
-        elif outcome == 3:
-            animation = open('images/video/3starpull.mp4', 'rb')
-            msg3 = await bot.edit_message_media(chat_id=call.message.chat.id,
-                                                message_id=call.message.id,
-                                                media=types.InputMedia(type='animation', media=animation))
-            await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
-                                           message_id=msg3.message_id)
-            await asyncio.sleep(7)
-            msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
+                await asyncio.sleep(7)
+                msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
+                                                   message_id=msg4.message_id)
+                await bot.edit_message_caption(caption=f'You got {reward}\n'
+                                                       f'and a little of 15 dust', chat_id=call.from_user.id,
+                                               message_id=msg.message_id, reply_markup=primo_banner_markup)
+                db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)',
+                                  (reward, call.from_user.id,
+                                   outcome))
+                db_connection.commit()
+            elif outcome == 3:
+                animation = open('images/video/3starpull.mp4', 'rb')
+                msg3 = await bot.edit_message_media(chat_id=call.message.chat.id,
+                                                    message_id=call.message.id,
+                                                    media=types.InputMedia(type='animation', media=animation))
+                await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
                                                message_id=msg3.message_id)
-            await bot.edit_message_caption(caption=f'You got {reward}', chat_id=call.from_user.id,
-                                           message_id=msg.message_id, reply_markup=primo_banner_markup)
-            db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)', (reward, call.from_user.id,
-                                                                                           outcome))
-            db_connection.commit()
+                await asyncio.sleep(7)
+                msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
+                                                   message_id=msg3.message_id)
+                await bot.edit_message_caption(caption=f'You got {reward}\n'
+                                                       f'and a little of 15 dust', chat_id=call.from_user.id,
+                                               message_id=msg.message_id, reply_markup=primo_banner_markup)
+                db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)',
+                                  (reward, call.from_user.id,
+                                   outcome))
+                db_connection.commit()
+        else:
+            wishing_photo = open('images/main_wish.jpg', 'rb')
+            msg = await bot.edit_message_media(media=types.InputMedia(type='photo', media=wishing_photo),
+                                               message_id=call.message.id,
+                                               chat_id=call.from_user.id, reply_markup=wish_markup)
+            await bot.edit_message_caption(caption=f'you have no money, go work you bastard', chat_id=call.from_user.id,
+                                           message_id=msg.message_id, reply_markup=wish_markup)
+
     elif call.data == 'banner1:back':
         wishing_photo = open('images/main_wish.jpg', 'rb')
         await bot.edit_message_media(media=types.InputMedia(type='photo', media=wishing_photo),

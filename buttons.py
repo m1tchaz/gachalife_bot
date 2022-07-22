@@ -14,7 +14,7 @@ main_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=
 clear_markup = types.ReplyKeyboardRemove(selective=False)
 
 statsbtn = types.KeyboardButton('character 🫀')
-nonebtn = types.KeyboardButton('something ❗')
+nonebtn = types.KeyboardButton('village ❗')
 gachabtn = types.KeyboardButton('wishing 🛐')
 inventorybtn = types.KeyboardButton('inventory 💼')
 raidbtn = types.KeyboardButton('raids ⚔')
