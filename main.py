@@ -44,19 +44,20 @@ async def creating_a_name(message):
 async def main_menu(message):
     if message.text.strip() == 'character 🫀':
         photo = open('images/character_1.jpg', 'rb')
-        db_object.execute(f"SELECT nickname,lvl,exp FROM users WHERE id = {message.chat.id}")
+        db_object.execute(f"SELECT nickname,lvl,exp,energy FROM users WHERE id = {message.chat.id}")
         res = db_object.fetchall()
         rank = res[0][1]
         exp_needed = rank_dict[rank + 1]
         db_object.execute(f'SELECT physics,wisdom,intelligence FROM stats WHERE id = {message.chat.id}')
         stati = db_object.fetchall()
         stats = f'👾 <b>{res[0][0].strip()}:</b>\n\n' \
-                f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n' \
+                f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
-                f'🛡 <b>defence:</b><em> none</em>\n' \
-                f'🛡 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
-                f'🛡 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
-                f'🛡 <b>intelligence:</b><em> {format(stati[0][2], ".4f")}</em>\n'
+                f'🛡 <b>defence:</b><em> none</em>\n\n' \
+                f'🔋 <b>energy</b>: {res[0][3]}\n\n' \
+                f'💪 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
+                f'🎩 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
+                f'🧠 <b>intelligence:</b><em> {format(stati[0][2], ".4f")}</em>\n'
         await bot.send_photo(message.chat.id, photo)
         await bot.send_message(message.chat.id, stats, reply_markup=additional_markup, parse_mode='HTML')
 
@@ -132,6 +133,8 @@ async def daily_delete(message):
     if check is not None:
         dlt = 'DELETE FROM dailies WHERE info = %s'
         db_object.execute(dlt, (message.text.strip(),))
+        count_upd = 'UPDATE users SET daily = daily - 1 WHERE id = %s'
+        db_object.execute(count_upd, (message.chat.id,))
         db_connection.commit()
         await bot.send_message(message.chat.id, text='daily has been successfully deleted', reply_markup=daily_markup)
         await bot.set_state(chat_id=message.chat.id, state=States.dailies_main, user_id=message.chat.id)
@@ -172,7 +175,7 @@ async def daily_type(call: types.CallbackQuery):
                                 text='What is the difficulty of the quest', reply_markup=dif_markup)
 
 
-@bot.callback_query_handler(func=None   , config=dif_callback.filter())
+@bot.callback_query_handler(func=None, config=dif_callback.filter())
 async def daily_diff(call: types.CallbackQuery):
     await bot.answer_callback_query(call.id, cache_time=1)
     db_object.execute(f'SELECT type from dailies WHERE id=1')
@@ -181,6 +184,8 @@ async def daily_diff(call: types.CallbackQuery):
     info = db_object.fetchone()
     db_object.execute("INSERT INTO dailies(id,info,type,difficulty) VALUES(%s,%s,%s,%s)",
                       (call.message.chat.id, info, type, call.data[5]))
+    count_upd = 'UPDATE users SET daily = daily + 1 WHERE id = %s'
+    db_object.execute(count_upd, (call.message.chat.id, ))
 
     db_object.execute(f'DELETE FROM dailies WHERE id=1')
     db_connection.commit()
@@ -219,7 +224,6 @@ async def daily_done(message):
         upd = 'UPDATE users SET exp = exp + %s WHERE id = %s RETURNING exp'
         db_object.execute(upd, (reward * 200, message.chat.id))
         new_exp = db_object.fetchall()[0][0]
-        print(new_exp)
         lvl_slt = 'SELECT lvl FROM users WHERE id= %s'
         db_object.execute(lvl_slt, (message.chat.id, ))
         lvl = db_object.fetchone()[0]
@@ -234,7 +238,11 @@ async def daily_done(message):
         primo_reward = reward * random.randint(1, 10)
         db_object.execute(money_upd, (primo_reward, message.chat.id))
         stat_reward = random.random() * reward
-        print(stat_reward)
+        daily_count = 'SELECT daily FROM users WHERE id = %s'
+        db_object.execute(daily_count, (message.chat.id, ))
+        energy_count = 100 / db_object.fetchone()[0]
+        energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy < 1000'
+        db_object.execute(energy_update, (energy_count, message.chat.id))
         if typik.strip() == 'physics':
             upd = 'UPDATE stats SET physics = physics + %s WHERE id = %s'
             db_object.execute(upd, (stat_reward, message.chat.id))
@@ -285,7 +293,7 @@ async def additional_stats(call: types.CallbackQuery):
                 f'🛡 <b>defence:</b><em> none</em>\n' \
                 f'🛡 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
                 f'🛡 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
-                f'🛡 <b>intelege:</b><em> {format(stati[0][2], ".4f")}</em>\n'
+                f'🛡 <b>intelligent:</b><em> {format(stati[0][2], ".4f")}</em>\n'
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                     text=stats, reply_markup=additional_markup, parse_mode='HTML')
     elif call.data == 'added:currency':
@@ -404,7 +412,7 @@ async def inventoring(call: types.CallbackQuery):
         await bot.edit_message_text(chat_id=call.message.chat.id, text=f'inventory:\n{show_inventory}',
                                     reply_markup=life_inventory_rare_epic_markup, message_id=call.message.message_id)
     elif call.data == 'storage:game':
-        await bot.send_message(call.message.chat.id, 'Nothing is here yewt', reply_markup=main_markup)
+        await bot.send_message(call.message.chat.id, 'Nothing is here yet', reply_markup=main_markup)
     elif call.data == 'storage:back':
         photo = open('images/main.jpg', 'rb')
         await bot.send_photo(photo=photo, chat_id=call.message.chat.id, reply_markup=main_markup)
