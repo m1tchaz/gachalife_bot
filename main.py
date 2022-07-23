@@ -1,6 +1,7 @@
 from config import *
 from buttons import *
 from states import *
+from pve import *
 import asyncio
 from constants import *
 from telebot import asyncio_filters
@@ -48,12 +49,14 @@ async def main_menu(message):
         res = db_object.fetchall()
         rank = res[0][1]
         exp_needed = rank_dict[rank + 1]
-        db_object.execute(f'SELECT physics,wisdom,intelligence FROM stats WHERE id = {message.chat.id}')
+        db_object.execute(f'SELECT physics,wisdom,intelligence,'
+                          f'current_health,max_health FROM stats WHERE id = {message.chat.id}')
         stati = db_object.fetchall()
         stats = f'👾 <b>{res[0][0].strip()}:</b>\n\n' \
                 f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
                 f'🛡 <b>defence:</b><em> none</em>\n\n' \
+                f'❤ <b>health:</b> {stati[0][3]}/{stati[0][4]}\n' \
                 f'🔋 <b>energy</b>: {res[0][3]}\n\n' \
                 f'💪 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
                 f'🎩 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
@@ -75,8 +78,9 @@ async def main_menu(message):
         await bot.send_message(message.chat.id, 'you got to the storage which box should we open?',
                                reply_markup=storage_markup)
 
-    elif message.text.strip() == 'raids ⚔':
-        await bot.send_message(message.chat.id, 'nothing is here yet...', reply_markup=main_markup)
+    elif message.text.strip() == 'pve ⚔':
+        await bot.set_state(message.chat.id, States.pve_main, chat_id=message.chat.id)
+        await bot.send_message(message.chat.id, 'what are we doing here?', reply_markup=pve_markup)
 
     elif message.text.strip() == 'commissions ⚛':
         dailies = ''
@@ -329,10 +333,16 @@ async def additional_stats(call: types.CallbackQuery):
 async def banner_choose(call: types.CallbackQuery):
     if call.data == 'wish:primogems':
         await bot.answer_callback_query(call.id, cache_time=2)
+        slt = 'SELECT primogems FROM users WHERE id =%s'
+        db_object.execute(slt, (call.message.chat.id,))
+        primo = db_object.fetchone()[0]
         banner = open('images/primobanner.jpg', 'rb')
-        await bot.edit_message_media(media=types.InputMedia(type='photo', media=banner), message_id=call.message.id,
-                                     chat_id=call.from_user.id, reply_markup=primo_banner_markup)
-
+        msg = await bot.edit_message_media(media=types.InputMedia(type='photo', media=banner),
+                                           message_id=call.message.id,
+                                           chat_id=call.from_user.id, reply_markup=primo_banner_markup)
+        await bot.edit_message_caption(caption=f'cost is 20💠\nyou have {primo}💠',
+                                       chat_id=call.message.chat.id, message_id=msg.message_id,
+                                       reply_markup=primo_banner_markup)
     elif call.data == 'wish:dust':
         await bot.answer_callback_query(call.id, cache_time=40)
         await bot.send_message(call.message.chat.id, 'nothing is here yet..', reply_markup=main_markup)

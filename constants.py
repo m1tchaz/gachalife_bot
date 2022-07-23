@@ -44,3 +44,12 @@ def wish_reward(wish_type, item_rarity):
         print(outcome)
 
     return outcome
+
+
+first_area_dict = {
+    'slime': [1, 100, 4, 6],
+    'wolf': [2, 123, 5, 8],
+    'azir': [3, 100, 4, 6],
+    'ezreal': [4, 123, 5, 8],
+    'bold guy': [5, 123, 5, 8]
+}

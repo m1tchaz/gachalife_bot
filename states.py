@@ -13,3 +13,6 @@ class States(StatesGroup):
     deilies_delete = State()
     dailies_type = State()
     deilies_diff = State()
+    pve_main = State()
+    pve_area_choose = State()
+    pve_area_farm = State()

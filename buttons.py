@@ -13,11 +13,12 @@ class CallbackFilter(AdvancedCustomFilter):
 main_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 clear_markup = types.ReplyKeyboardRemove(selective=False)
 
+
 statsbtn = types.KeyboardButton('character 🫀')
 nonebtn = types.KeyboardButton('village ❗')
 gachabtn = types.KeyboardButton('wishing 🛐')
 inventorybtn = types.KeyboardButton('inventory 💼')
-raidbtn = types.KeyboardButton('raids ⚔')
+raidbtn = types.KeyboardButton('pve ⚔')
 dailybtn = types.KeyboardButton('commissions ⚛')
 main_markup.add(statsbtn, nonebtn, gachabtn, inventorybtn, raidbtn, dailybtn)
 
@@ -82,11 +83,6 @@ back_inline_markup = types.InlineKeyboardMarkup(keyboard=[
     ]
 ])
 
-check_deilies_btn = types.KeyboardButton('check dailies')
-daily_add_btn = types.KeyboardButton('add dailies')
-delete_deilies_btn = types.KeyboardButton('delete dailies')
-daily_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True).add(check_deilies_btn, daily_add_btn,
-                                                                               delete_deilies_btn, backbtn)
 
 dif_callback = CallbackData('dif_name', prefix='diff')
 btn = []
@@ -222,3 +218,20 @@ life_inventory_use_markup = types.InlineKeyboardMarkup(keyboard=[
         life_use_inventory_back_btn
     ]
 ])
+
+areas_btn = types.KeyboardButton('search areas')
+dungeons_btn = types.KeyboardButton('dungeons')
+pve_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True).add(areas_btn, dungeons_btn)
+
+check_deilies_btn = types.KeyboardButton('check dailies')
+daily_add_btn = types.KeyboardButton('add dailies')
+delete_deilies_btn = types.KeyboardButton('delete dailies')
+daily_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True).add(check_deilies_btn, daily_add_btn,
+                                                                                delete_deilies_btn, backbtn)
+
+attack_btn = types.KeyboardButton('attack')
+retreat_btn = types.KeyboardButton('retreat')
+find_another_btn = types.KeyboardButton('find another')
+fight_markup = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True)\
+    .add(attack_btn, find_another_btn, retreat_btn)
+
