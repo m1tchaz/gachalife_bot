@@ -1,8 +1,4 @@
-from config import *
-from buttons import *
-from states import *
 from pve import *
-import asyncio
 from constants import *
 from telebot import asyncio_filters
 
@@ -45,15 +41,21 @@ async def creating_a_name(message):
 async def main_menu(message):
     if message.text.strip() == 'character 🫀':
         photo = open('images/character_1.jpg', 'rb')
-        db_object.execute(f"SELECT nickname,lvl,exp,energy FROM users WHERE id = {message.chat.id}")
+        db_object.execute(f"SELECT nickname,lvl,exp,energy,rank FROM users WHERE id = {message.chat.id}")
         res = db_object.fetchall()
-        rank = res[0][1]
-        exp_needed = rank_dict[rank + 1]
+        lvl = res[0][1]
+        rank = res[0][4]
+        if rank == 0:
+            rank = 'challenger'
+        else:
+            rank = 'admin'
+        exp_needed = lvl_dict[lvl + 1]
         db_object.execute(f'SELECT physics,wisdom,intelligence,'
                           f'current_health,max_health FROM stats WHERE id = {message.chat.id}')
         stati = db_object.fetchall()
         stats = f'👾 <b>{res[0][0].strip()}:</b>\n\n' \
-                f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n\n' \
+                f'✨ <b>lvl:</b> <em>{lvl} ({res[0][2]}/{exp_needed})</em>\n' \
+                f'🎖 <b>rank: {rank}</b>\n\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
                 f'🛡 <b>defence:</b><em> none</em>\n\n' \
                 f'❤ <b>health:</b> {stati[0][3]}/{stati[0][4]}\n' \
@@ -145,6 +147,8 @@ async def daily_delete(message):
         db_object.execute(dlt, (message.text.strip(),))
         count_upd = 'UPDATE users SET daily = daily - 1 WHERE id = %s'
         db_object.execute(count_upd, (message.chat.id,))
+        count_upd = 'UPDATE users SET dailies_left = dailies_left - 1 WHERE id = %s'
+        db_object.execute(count_upd, (message.chat.id,))
         db_connection.commit()
         await bot.send_message(message.chat.id, text='daily has been successfully deleted', reply_markup=daily_markup)
         await bot.set_state(chat_id=message.chat.id, state=States.dailies_main, user_id=message.chat.id)
@@ -196,6 +200,8 @@ async def daily_diff(call: types.CallbackQuery):
                       (call.message.chat.id, info, type, call.data[5]))
     count_upd = 'UPDATE users SET daily = daily + 1 WHERE id = %s'
     db_object.execute(count_upd, (call.message.chat.id,))
+    count_upd = 'UPDATE users SET dailies_left = dailies_left + 1 WHERE id = %s'
+    db_object.execute(count_upd, (call.message.chat.id,))
 
     db_object.execute(f'DELETE FROM dailies WHERE id=1')
     db_connection.commit()
@@ -221,6 +227,8 @@ async def deilies_conf(message):
 @bot.message_handler(state=States.deilies_completion)
 async def daily_done(message):
     if message.text.strip() == 'Yes':
+        msg_to_delete = await bot.send_message(text='confirming the information...', chat_id=message.chat.id,
+                                               reply_markup=clear_markup)
         slt_1 = 'SELECT info FROM dailies WHERE id=%s'
         db_object.execute(slt_1, (message.chat.id + 1,))
         info_untouched = db_object.fetchone()[0]
@@ -231,16 +239,35 @@ async def daily_done(message):
         tp = 'SELECT type FROM dailies WHERE id = %s AND info = %s'
         db_object.execute(tp, (message.chat.id, info))
         typik = db_object.fetchone()[0]
-        upd = 'UPDATE users SET exp = exp + %s WHERE id = %s RETURNING exp'
-        db_object.execute(upd, (reward * 200, message.chat.id))
-        new_exp = db_object.fetchall()[0][0]
         lvl_slt = 'SELECT lvl FROM users WHERE id= %s'
         db_object.execute(lvl_slt, (message.chat.id,))
         lvl = db_object.fetchone()[0]
-        while new_exp > rank_dict[lvl + 1]:
+        daily_count = 'SELECT daily FROM users WHERE id = %s'
+        db_object.execute(daily_count, (message.chat.id,))
+        daily_count = db_object.fetchone()[0]
+        start_lvl_select = 'SELECT start_lvl from USERS WHERE id=%s'
+        db_object.execute(start_lvl_select, (message.chat.id,))
+        start_lvl = db_object.fetchone()[0]
+        if start_lvl == 0:
+            start_lvl = lvl
+            start_lvl_update = 'UPDATE users SET start_lvl = %s WHERE id = %s'
+            db_object.execute(start_lvl_update, (start_lvl, message.chat.id))
+        full_exp_day = 0
+        for lvl_number in range(start_lvl + 1, start_lvl + 4):
+            full_exp_day += lvl_dict[lvl_number]
+        exp_reward = math.ceil(full_exp_day / daily_count)
+        print(exp_reward)
+        upd = 'UPDATE users SET exp = exp + %s WHERE id = %s RETURNING exp'
+        db_object.execute(upd, (exp_reward, message.chat.id))
+        new_exp = db_object.fetchall()[0][0]
+        if new_exp > 15 and lvl == start_lvl + 3:
+            upd = 'UPDATE users SET exp = exp - %s WHERE id = %s'
+            db_object.execute(upd, (exp_reward, message.chat.id))
+            exp_reward = 0
+        while new_exp >= lvl_dict[lvl + 1]:
             upd_lvl = 'UPDATE users SET lvl = lvl + 1 WHERE id= %s'
             db_object.execute(upd_lvl, (message.chat.id,))
-            new_exp = new_exp - rank_dict[lvl + 1]
+            new_exp = new_exp - lvl_dict[lvl + 1]
             upd_exp = 'UPDATE users set exp = %s WHERE id = %s'
             db_object.execute(upd_exp, (new_exp, message.chat.id))
             lvl = lvl + 1
@@ -248,17 +275,40 @@ async def daily_done(message):
         primo_reward = reward * random.randint(1, 10)
         db_object.execute(money_upd, (primo_reward, message.chat.id))
         stat_reward = random.random() * reward
-        daily_count = 'SELECT daily FROM users WHERE id = %s'
-        db_object.execute(daily_count, (message.chat.id,))
-        energy_count = 100 / db_object.fetchone()[0]
+        rank_exp_left_slt = "SELECT rank_exp_left FROM users WHERE id =%s"
+        db_object.execute(rank_exp_left_slt, (message.chat.id, ))
+        rank_exp_left = db_object.fetchone()[0]
+        daily_left_slt = 'SELECT dailies_left FROM users WHERE id= %s'
+        db_object.execute(daily_left_slt, (message.chat.id, ))
+        daily_left_count = db_object.fetchone()[0]
+        energy_left_slt = 'SELECT energy_left FROM users where id =%s'
+        db_object.execute(energy_left_slt, (message.chat.id, ))
+        energy_left = db_object.fetchone()[0]
+        rank_exp_count = math.ceil(rank_exp_left / daily_left_count)
+        energy_count = math.ceil(energy_left / daily_left_count)
         energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy < 1000'
         db_object.execute(energy_update, (energy_count, message.chat.id))
+        energy_left_update = 'UPDATE users SET energy_left = energy_left - %s where id= %s'
+        db_object.execute(energy_left_update, (energy_count, message.chat.id))
+        rank_slt = 'SELECT rank FROM users WHERE id = %s'
+        db_object.execute(rank_slt, (message.chat.id,))
+        rank = db_object.fetchone()[0]
+        rank_exp_update = 'UPDATE users SET rank_exp = rank_exp + %s WHERE id = %s RETURNING rank_exp'
+        rank_exp_left_update = 'UPDATE users SET rank_exp_left = rank_exp_left - %s WHERE id=%s'
+        db_object.execute(rank_exp_left_update, (rank_exp_count, message.chat.id))
+        db_object.execute(rank_exp_update, (rank_exp_count, message.chat.id))
+        new_rank_exp = db_object.fetchall()[0][0]
+        if new_rank_exp > rank_dict[rank + 1]:
+            rank_update = 'UPDATE users SET rank = rank + 1 WHERE id = %s'
+            db_object.execute(rank_update, (message.chat.id,))
+        await asyncio.sleep(1.5)
+        await bot.delete_message(chat_id=message.chat.id, message_id=msg_to_delete.message_id)
         if typik.strip() == 'physics':
             upd = 'UPDATE stats SET physics = physics + %s WHERE id = %s'
             db_object.execute(upd, (stat_reward, message.chat.id))
             await bot.send_message(message.chat.id, f'daily completed.\n'
                                                     f'physics gain : {format(stat_reward, ".4f")}\n'
-                                                    f'exp gain: {reward * 200}\n'
+                                                    f'exp gain: {exp_reward}\n'
                                                     f'primo gain: {primo_reward}',
                                    reply_markup=daily_markup)
         elif typik.strip() == 'wisdom':
@@ -266,7 +316,7 @@ async def daily_done(message):
             db_object.execute(upd, (stat_reward, message.chat.id))
             await bot.send_message(message.chat.id, f'daily completed.\n'
                                                     f'wisdom gain : {format(stat_reward, ".4f")}\n'
-                                                    f'exp gain: {reward * 200}\n'
+                                                    f'exp gain: {exp_reward}\n'
                                                     f'primo gain: {primo_reward}',
                                    reply_markup=daily_markup)
         else:
@@ -274,9 +324,11 @@ async def daily_done(message):
             db_object.execute(upd, (stat_reward, message.chat.id))
             await bot.send_message(message.chat.id, f'daily completed.\n'
                                                     f'intelligence gain : {format(stat_reward, ".4f")}\n'
-                                                    f'exp gain: {reward * 200}\n'
+                                                    f'exp gain: {exp_reward}\n'
                                                     f'primo gain: {primo_reward}',
                                    reply_markup=daily_markup)
+        upd = 'UPDATE users SET dailies_left = dailies_left - 1 WHERE id=%s'
+        db_object.execute(upd, (message.chat.id, ))
         dlt = 'UPDATE dailies SET accomplishment = 1 WHERE id = %s AND info = %s '
         db_object.execute(dlt, (message.chat.id, info))
         db_object.execute(f'DELETE FROM dailies WHERE id={message.chat.id + 1}')
@@ -294,7 +346,7 @@ async def additional_stats(call: types.CallbackQuery):
         db_object.execute(f"SELECT nickname,lvl,exp FROM users WHERE id = {call.message.chat.id}")
         res = db_object.fetchall()
         rank = res[0][1]
-        exp_needed = rank_dict[rank + 1]
+        exp_needed = lvl_dict[rank + 1]
         db_object.execute(f'SELECT physics,wisdom,intelligence FROM stats WHERE id = {call.message.chat.id}')
         stati = db_object.fetchall()
         stats = f'👾 <b>{res[0][0].strip()}:</b>\n\n' \
@@ -581,16 +633,6 @@ async def inventory_item_used(message):
 async def listener(messages):
     for m in messages:
         print(f'Current state is: {await bot.get_state(m.from_user.id, m.chat.id)}')
-
-
-async def dailie_reset():
-    while True:
-        print(get_time())
-        time = get_time()
-        if int(time) == 0:
-            db_object.execute(f'UPDATE dailies SET accomplishment = 0')
-            db_connection.commit()
-        await asyncio.sleep(3600)
 
 
 async def main():

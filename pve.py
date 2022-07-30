@@ -35,9 +35,22 @@ class Hero:
 async def fight(hero, opponent, message):
     while hero.health > 0 and opponent.health > 0:
         await asyncio.sleep(1)
-        opponent.health = opponent.health - random.randint(hero.min_attack, hero.max_attack)
-        hero.health = hero.health - random.randint(opponent.min_attack, opponent.max_attack)
-        await bot.edit_message_text(text=f'your health:{hero.health}\nenemy health:{opponent.health}', chat_id=message.chat.id, message_id=message.message_id)
+        enemy_dmg = random.randint(opponent.min_attack, opponent.max_attack)
+        hero_dmg = random.randint(hero.min_attack, hero.max_attack)
+        opponent.health = opponent.health - hero_dmg
+        hero.health = hero.health - enemy_dmg
+        if opponent.health < 0:
+            opponent.health = 0
+        if hero.health < 0:
+            hero.health = 0
+        await bot.edit_message_text(text=f'you have done {hero_dmg} dmg\n'
+                                         f'while you opponent did {enemy_dmg}\n\n'
+                                         f'your health:{hero.health}\nenemy health:{opponent.health}',
+                                    chat_id=message.chat.id, message_id=message.message_id)
+    if opponent.health > 0:
+        return False
+    else:
+        return True
 
 
 first_area_mobs = dict()
@@ -93,13 +106,16 @@ async def area_farming(message):
     if message.text == 'attack':
         if 'enemy' in globals():
             hero = Hero(message.chat.id)
-            msg = await bot.send_message(message.chat.id, 'initiating the fight in 3 second', reply_markup=None)
-            await fight(hero, enemy, msg)
-            await asyncio.sleep(3)
-            await bot.edit_message_text(text='you have died', chat_id=message.chat.id, message_id=msg.message_id)
+            msg = await bot.send_message(message.chat.id, 'initiating the fight in 1 second', reply_markup=None)
+            await asyncio.sleep(1)
+            result_of_fight = await fight(hero, enemy, msg)
+            if result_of_fight:
+                await bot.edit_message_text(text='you won the fight', chat_id=message.chat.id, message_id=msg.message_id)
+            else:
+                await bot.edit_message_text(text='you have died', chat_id=message.chat.id, message_id=msg.message_id)
             del enemy
         else:
-            bot.send_message(message.chat.id, 'you should find an enemy', reply_markup=fight_markup)
+            await bot.send_message(message.chat.id, 'you should find an enemy', reply_markup=fight_markup)
     elif message.text == 'find another':
         enemy = random.choice(list(first_area_mobs.values()))
         await bot.send_message(message.chat.id, f'you have encountered <b>{enemy.name}</b> '

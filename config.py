@@ -1,14 +1,6 @@
 import psycopg2
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_storage import StateMemoryStorage
-from datetime import datetime
-import pytz
-
-
-def get_time():
-    samara_time = pytz.timezone('Europe/Samara')
-    time = datetime.now(samara_time)
-    return time.strftime("%H:%M:%S")[:2]
 
 
 API_KEY = '5360806461:AAHtoCHkJu17oCp9vmLIeRrfO4u9cQtiPio'
