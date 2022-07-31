@@ -1,3 +1,5 @@
+import random
+
 from pve import *
 from constants import *
 from telebot import asyncio_filters
@@ -45,24 +47,31 @@ async def main_menu(message):
         res = db_object.fetchall()
         lvl = res[0][1]
         rank = res[0][4]
-        if rank == 0:
-            rank = 'challenger'
+        if rank == 1:
+            rank = '[I] platinum'
+        elif rank == 2:
+            rank = '[II] diamond'
+        elif rank == 3:
+            rank = '[III] master'
+        elif rank == 4:
+            rank = '[IV] grandmaster'
         else:
-            rank = 'admin'
+            rank = '[V] challenger'
         exp_needed = lvl_dict[lvl + 1]
-        db_object.execute(f'SELECT physics,wisdom,intelligence,'
-                          f'current_health,max_health FROM stats WHERE id = {message.chat.id}')
+        db_object.execute(f'SELECT physics,wisdom,intelligence,health,'
+                          f'max_health FROM stats WHERE id = {message.chat.id}')
         stati = db_object.fetchall()
         stats = f'👾 <b>{res[0][0].strip()}:</b>\n\n' \
                 f'✨ <b>lvl:</b> <em>{lvl} ({res[0][2]}/{exp_needed})</em>\n' \
                 f'🎖 <b>rank: {rank}</b>\n\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
                 f'🛡 <b>defence:</b><em> none</em>\n\n' \
-                f'❤ <b>health:</b> {stati[0][3]}/{stati[0][4]}\n' \
+                f'❤ <b>HP:</b> {stati[0][4]}\n' \
                 f'🔋 <b>energy</b>: {res[0][3]}\n\n' \
-                f'💪 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
-                f'🎩 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
-                f'🧠 <b>intelligence:</b><em> {format(stati[0][2], ".4f")}</em>\n'
+                f'🫁<b>health</b>: {format(stati[0][3], ".2f")}\n' \
+                f'💪 <b>physics:</b><em> {format(stati[0][0], ".2f")}</em>\n' \
+                f'🎩 <b>wisdom:</b><em> {format(stati[0][1], ".2f")}</em>\n' \
+                f'🧠 <b>intelligence:</b><em> {format(stati[0][2], ".2f")}</em>\n'
         await bot.send_photo(message.chat.id, photo)
         await bot.send_message(message.chat.id, stats, reply_markup=additional_markup, parse_mode='HTML')
 
@@ -86,8 +95,8 @@ async def main_menu(message):
 
     elif message.text.strip() == 'commissions ⚛':
         dailies = ''
-        typiki = ['physics', 'wisdom', 'intelligence']
-        cool_typiki = ['💪physics', '🎩wisdom', '🧠intelligence']
+        typiki = ['physics', 'wisdom', 'intelligence', 'health']
+        cool_typiki = ['💪physics', '🎩wisdom', '🧠intelligence', '🫁health']
         count = 0
         for value in typiki:
             dailies_list = ''
@@ -255,8 +264,8 @@ async def daily_done(message):
         full_exp_day = 0
         for lvl_number in range(start_lvl + 1, start_lvl + 4):
             full_exp_day += lvl_dict[lvl_number]
+        full_exp_day = full_exp_day * 0.75
         exp_reward = math.ceil(full_exp_day / daily_count)
-        print(exp_reward)
         upd = 'UPDATE users SET exp = exp + %s WHERE id = %s RETURNING exp'
         db_object.execute(upd, (exp_reward, message.chat.id))
         new_exp = db_object.fetchall()[0][0]
@@ -272,21 +281,21 @@ async def daily_done(message):
             db_object.execute(upd_exp, (new_exp, message.chat.id))
             lvl = lvl + 1
         money_upd = 'UPDATE users set primogems = primogems + %s WHERE id = %s'
-        primo_reward = reward * random.randint(1, 10)
+        primo_reward = reward * (random.randint(74, 114) / 10)
         db_object.execute(money_upd, (primo_reward, message.chat.id))
         stat_reward = random.random() * reward
         rank_exp_left_slt = "SELECT rank_exp_left FROM users WHERE id =%s"
-        db_object.execute(rank_exp_left_slt, (message.chat.id, ))
+        db_object.execute(rank_exp_left_slt, (message.chat.id,))
         rank_exp_left = db_object.fetchone()[0]
         daily_left_slt = 'SELECT dailies_left FROM users WHERE id= %s'
-        db_object.execute(daily_left_slt, (message.chat.id, ))
+        db_object.execute(daily_left_slt, (message.chat.id,))
         daily_left_count = db_object.fetchone()[0]
         energy_left_slt = 'SELECT energy_left FROM users where id =%s'
-        db_object.execute(energy_left_slt, (message.chat.id, ))
+        db_object.execute(energy_left_slt, (message.chat.id,))
         energy_left = db_object.fetchone()[0]
         rank_exp_count = math.ceil(rank_exp_left / daily_left_count)
         energy_count = math.ceil(energy_left / daily_left_count)
-        energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy < 1000'
+        energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy <= 100'
         db_object.execute(energy_update, (energy_count, message.chat.id))
         energy_left_update = 'UPDATE users SET energy_left = energy_left - %s where id= %s'
         db_object.execute(energy_left_update, (energy_count, message.chat.id))
@@ -319,7 +328,7 @@ async def daily_done(message):
                                                     f'exp gain: {exp_reward}\n'
                                                     f'primo gain: {primo_reward}',
                                    reply_markup=daily_markup)
-        else:
+        elif typik.strip() == 'intelligence':
             upd = 'UPDATE stats SET intelligence = intelligence + %s WHERE id = %s'
             db_object.execute(upd, (stat_reward, message.chat.id))
             await bot.send_message(message.chat.id, f'daily completed.\n'
@@ -327,8 +336,16 @@ async def daily_done(message):
                                                     f'exp gain: {exp_reward}\n'
                                                     f'primo gain: {primo_reward}',
                                    reply_markup=daily_markup)
+        else:
+            upd = 'UPDATE stats SET health = health + %s WHERE id = %s'
+            db_object.execute(upd, (stat_reward, message.chat.id))
+            await bot.send_message(message.chat.id, f'daily completed.\n'
+                                                    f'health gain : {format(stat_reward, ".4f")}\n'
+                                                    f'exp gain: {exp_reward}\n'
+                                                    f'primo gain: {primo_reward}',
+                                   reply_markup=daily_markup)
         upd = 'UPDATE users SET dailies_left = dailies_left - 1 WHERE id=%s'
-        db_object.execute(upd, (message.chat.id, ))
+        db_object.execute(upd, (message.chat.id,))
         dlt = 'UPDATE dailies SET accomplishment = 1 WHERE id = %s AND info = %s '
         db_object.execute(dlt, (message.chat.id, info))
         db_object.execute(f'DELETE FROM dailies WHERE id={message.chat.id + 1}')
@@ -343,19 +360,35 @@ async def daily_done(message):
 @bot.callback_query_handler(func=None, config=additional_callback.filter())
 async def additional_stats(call: types.CallbackQuery):
     if call.data == 'added:main':
-        db_object.execute(f"SELECT nickname,lvl,exp FROM users WHERE id = {call.message.chat.id}")
+        db_object.execute(f"SELECT nickname,lvl,exp,energy,rank FROM users WHERE id = {call.message.chat.id}")
         res = db_object.fetchall()
-        rank = res[0][1]
-        exp_needed = lvl_dict[rank + 1]
-        db_object.execute(f'SELECT physics,wisdom,intelligence FROM stats WHERE id = {call.message.chat.id}')
+        lvl = res[0][1]
+        rank = res[0][4]
+        if rank == 1:
+            rank = '[I] platinum'
+        elif rank == 2:
+            rank = '[II] diamond'
+        elif rank == 3:
+            rank = '[III] master'
+        elif rank == 4:
+            rank = '[IV] grandmaster'
+        else:
+            rank = '[V] challenger'
+        exp_needed = lvl_dict[lvl + 1]
+        db_object.execute(f'SELECT physics,wisdom,intelligence,health,'
+                          f'max_health FROM stats WHERE id = {call.message.chat.id}')
         stati = db_object.fetchall()
         stats = f'👾 <b>{res[0][0].strip()}:</b>\n\n' \
-                f'✨ <b>rank:</b> <em>{rank} ({res[0][2]}/{exp_needed})</em>\n' \
+                f'✨ <b>lvl:</b> <em>{lvl} ({res[0][2]}/{exp_needed})</em>\n' \
+                f'🎖 <b>rank: {rank}</b>\n\n' \
                 f'⚔ <b>attack:</b> <em>none</em>\n' \
-                f'🛡 <b>defence:</b><em> none</em>\n' \
-                f'🛡 <b>physics:</b><em> {format(stati[0][0], ".4f")}</em>\n' \
-                f'🛡 <b>wisdom:</b><em> {format(stati[0][1], ".4f")}</em>\n' \
-                f'🛡 <b>intelligent:</b><em> {format(stati[0][2], ".4f")}</em>\n'
+                f'🛡 <b>defence:</b><em> none</em>\n\n' \
+                f'❤ <b>HP:</b> {stati[0][4]}\n' \
+                f'🔋 <b>energy</b>: {res[0][3]}\n\n' \
+                f'🫁<b>health</b>: {format(stati[0][3], ".2f")}\n' \
+                f'💪 <b>physics:</b><em> {format(stati[0][0], ".2f")}</em>\n' \
+                f'🎩 <b>wisdom:</b><em> {format(stati[0][1], ".2f")}</em>\n' \
+                f'🧠 <b>intelligence:</b><em> {format(stati[0][2], ".2f")}</em>\n'
         await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
                                     text=stats, reply_markup=additional_markup, parse_mode='HTML')
     elif call.data == 'added:currency':
@@ -392,7 +425,7 @@ async def banner_choose(call: types.CallbackQuery):
         msg = await bot.edit_message_media(media=types.InputMedia(type='photo', media=banner),
                                            message_id=call.message.id,
                                            chat_id=call.from_user.id, reply_markup=primo_banner_markup)
-        await bot.edit_message_caption(caption=f'cost is 20💠\nyou have {primo}💠',
+        await bot.edit_message_caption(caption=f'cost is 160💠\nyou have {primo}💠',
                                        chat_id=call.message.chat.id, message_id=msg.message_id,
                                        reply_markup=primo_banner_markup)
     elif call.data == 'wish:dust':
@@ -413,8 +446,9 @@ async def wishing(call: types.CallbackQuery):
     if call.data == 'banner1:roll':
         slt = 'SELECT primogems FROM users WHERE id=%s'
         db_object.execute(slt, (call.message.chat.id,))
-        if db_object.fetchone()[0] > 20:
-            upd = 'UPDATE users SET primogems = primogems - 20 WHERE id= %s'
+        roll_price = 160
+        if db_object.fetchone()[0] >= roll_price:
+            upd = 'UPDATE users SET primogems = primogems - 160 WHERE id= %s'
             db_object.execute(upd, (call.message.chat.id,))
             upd = 'UPDATE users SET dust = dust + 15 WHERE id= %s'
             db_object.execute(upd, (call.message.chat.id,))
@@ -431,14 +465,20 @@ async def wishing(call: types.CallbackQuery):
                 await bot.edit_message_caption(caption=f'{nickname} is rolling gacha', chat_id=call.from_user.id,
                                                message_id=msg5.message_id)
                 await asyncio.sleep(7)
-                msg = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop), chat_id=call.from_user.id,
-                                                   message_id=msg5.message_id)
+                msg5_new = await bot.edit_message_media(media=types.InputMediaPhoto(media=drop),
+                                                        chat_id=call.from_user.id,
+                                                        message_id=msg5.message_id)
                 await bot.edit_message_caption(caption=f'You got {reward}\n'
                                                        f'and a little of 15 dust', chat_id=call.from_user.id,
-                                               message_id=msg.message_id, reply_markup=primo_banner_markup)
-                db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)',
-                                  (reward, call.from_user.id,
-                                   outcome))
+                                               message_id=msg5_new.message_id, reply_markup=primo_banner_markup)
+                if reward == '3 charges of going out\ rpg development':
+                    for _ in range(3):
+                        insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
+                        db_object.execute(insert_st, ('going out/rpg development', call.message.chat.id, outcome))
+                else:
+                    db_object.execute(f'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)',
+                                      (reward, call.from_user.id,
+                                       outcome))
                 db_connection.commit()
             elif outcome == 4:
                 animation = open('images/video/4starpull.mp4', 'rb')
@@ -481,7 +521,6 @@ async def wishing(call: types.CallbackQuery):
                                                chat_id=call.from_user.id, reply_markup=wish_markup)
             await bot.edit_message_caption(caption=f'you have no money, go work you bastard', chat_id=call.from_user.id,
                                            message_id=msg.message_id, reply_markup=wish_markup)
-
     elif call.data == 'banner1:back':
         wishing_photo = open('images/main_wish.jpg', 'rb')
         await bot.edit_message_media(media=types.InputMedia(type='photo', media=wishing_photo),

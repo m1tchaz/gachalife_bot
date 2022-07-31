@@ -100,9 +100,10 @@ physics_btn = types.InlineKeyboardButton(text='physics', callback_data=types_cal
 wisdom_btn = types.InlineKeyboardButton(text='wisdom', callback_data=types_callback.new(type_name='wisdom'))
 intelligence_btn = types.InlineKeyboardButton(text='intelligence',
                                               callback_data=types_callback.new(type_name='intelligence'))
+health_btn = types.InlineKeyboardButton(text='health', callback_data=types_callback.new(type_name='health'))
 types_markup = types.InlineKeyboardMarkup(keyboard=[
     [
-        physics_btn, wisdom_btn, intelligence_btn
+        physics_btn, wisdom_btn, intelligence_btn, health_btn
     ]
 ])
 
