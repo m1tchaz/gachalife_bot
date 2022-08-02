@@ -79,7 +79,7 @@ async def main_menu(message):
         await bot.send_message(message.chat.id, 'nothing is here yet...', reply_markup=main_markup)
 
     elif message.text.strip() == 'wishing 🛐':
-        photo = open('images\main_wish.jpg', 'rb')
+        photo = open('images/main_wish.jpg', 'rb')
         await bot.send_photo(message.chat.id, photo=photo,
                              reply_markup=wish_markup)
 
