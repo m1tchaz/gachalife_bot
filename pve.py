@@ -11,11 +11,11 @@ class Enemy:
     def __init__(self, name, place):
         self.name = name
         self.place = place
-        self.lvl = place[self.name][0]
-        self.health = place[self.name][1]
-        self.min_attack = place[self.name][2]
-        self.max_attack = place[self.name][3]
-        self.photo = place[self.name][4]
+        self.lvl = random.randint(1, 10)
+        self.health = self.lvl * 100
+        self.min_attack = self.lvl * 4
+        self.max_attack = self.lvl * 6
+        self.photo = place[self.name][0]
 
 
 class Hero:
@@ -57,9 +57,6 @@ async def fight(hero, opponent, message):
 
 first_area_mobs = dict()
 
-for enemy_ in first_area_dict.keys():
-    new_enemy = Enemy(enemy_, first_area_dict)
-    first_area_mobs[enemy_] = new_enemy
 
 global enemy, msg
 
@@ -92,7 +89,7 @@ async def change_target_location(message):
 async def area_choosing(message):
     if message.text == 'desert':
         global enemy, msg
-        enemy = random.choice(list(first_area_mobs.values()))
+        enemy = Enemy(random.choice(list(first_area_dict.keys())), first_area_dict)
         photo = open(enemy.photo, 'rb')
         await bot.send_photo(message.chat.id, photo)
         msg = await bot.send_message(message.chat.id, f'you have encountered <b>{enemy.name}</b> '
@@ -163,7 +160,7 @@ async def area_farming(message):
         else:
             await bot.send_message(message.chat.id, 'not enough energy', reply_markup=fight_markup)
     elif message.text == 'find another':
-        enemy = random.choice(list(first_area_mobs.values()))
+        enemy = Enemy(random.choice(list(first_area_dict.keys())), first_area_dict)
         photo = open(enemy.photo, 'rb')
         await bot.send_photo(message.chat.id, photo)
         await bot.send_message(message.chat.id, f'you have encountered <b>{enemy.name}</b> '

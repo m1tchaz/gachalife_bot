@@ -13,7 +13,6 @@ class CallbackFilter(AdvancedCustomFilter):
 main_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 clear_markup = types.ReplyKeyboardRemove(selective=False)
 
-
 statsbtn = types.KeyboardButton('character 🫀')
 nonebtn = types.KeyboardButton('village ❗')
 gachabtn = types.KeyboardButton('wishing 🛐')
@@ -83,7 +82,6 @@ back_inline_markup = types.InlineKeyboardMarkup(keyboard=[
     ]
 ])
 
-
 dif_callback = CallbackData('dif_name', prefix='diff')
 btn = []
 for i in range(1, 6):
@@ -93,7 +91,6 @@ dif_markup = types.InlineKeyboardMarkup(keyboard=[
         btn[0], btn[1], btn[2], btn[3], btn[4],
     ]
 ])
-
 
 types_callback = CallbackData('type_name', prefix='type')
 physics_btn = types.InlineKeyboardButton(text='physics', callback_data=types_callback.new(type_name='physics'))
@@ -147,6 +144,7 @@ life_inventory_btn = types.InlineKeyboardButton(text='Life Storage',
                                                 callback_data=storage_callback.new(storage_name='life'))
 game_inventory_btn = types.InlineKeyboardButton(text='Game Storage',
                                                 callback_data=storage_callback.new(storage_name='game'))
+shop_btn = types.InlineKeyboardButton(text='shop', callback_data=storage_callback.new(storage_name='shop'))
 storage_back_btn = types.InlineKeyboardButton(text='Back',
                                               callback_data=storage_callback.new(storage_name='back'))
 storage_markup = types.InlineKeyboardMarkup(keyboard=[
@@ -154,9 +152,31 @@ storage_markup = types.InlineKeyboardMarkup(keyboard=[
         life_inventory_btn, game_inventory_btn
     ],
     [
+        shop_btn
+    ],
+    [
         storage_back_btn
     ]
 
+])
+
+shop_callback = CallbackData('shop_item', prefix='item')
+youtube_shop_btn = types.InlineKeyboardButton(text='yt 30 minutes - 45',
+                                              callback_data=shop_callback.new(shop_item='youtube'))
+anime_shop_btn = types.InlineKeyboardButton(text='1 anime - 45',
+                                            callback_data=shop_callback.new(shop_item='anime'))
+game_shop_btn = types.InlineKeyboardButton(text='30 minutes of game time - 45',
+                                           callback_data=shop_callback.new(shop_item='game'))
+discord_shop_btn = types.InlineKeyboardButton(text='discord 40 minutes - 60',
+                                              callback_data=shop_callback.new(shop_item='discord'))
+film_shop_btn = types.InlineKeyboardButton(text='film - 100',
+                                           callback_data=shop_callback.new(shop_item='film'))
+back_shop_btn = types.InlineKeyboardButton(text='🚪Back', callback_data=shop_callback.new(shop_item='back'))
+shop_markup = types.InlineKeyboardMarkup(keyboard=[
+    [youtube_shop_btn, anime_shop_btn],
+    [game_shop_btn, discord_shop_btn],
+    [film_shop_btn],
+    [back_shop_btn]
 ])
 
 life_inventory_callback = CallbackData('rarity', prefix='life_item_rarity')
@@ -233,6 +253,5 @@ daily_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True).add(
 attack_btn = types.KeyboardButton('attack')
 retreat_btn = types.KeyboardButton('retreat')
 find_another_btn = types.KeyboardButton('find another')
-fight_markup = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True)\
+fight_markup = types.ReplyKeyboardMarkup(row_width=3, resize_keyboard=True) \
     .add(attack_btn, find_another_btn, retreat_btn)
-

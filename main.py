@@ -541,10 +541,90 @@ async def inventoring(call: types.CallbackQuery):
                                     reply_markup=life_inventory_rare_epic_markup, message_id=call.message.message_id)
     elif call.data == 'storage:game':
         await bot.send_message(call.message.chat.id, 'Nothing is here yet', reply_markup=main_markup)
+    elif call.data == 'storage:shop':
+        await bot.edit_message_text(chat_id=call.message.chat.id, text='welcome to the shop', reply_markup=shop_markup,
+                                    message_id=call.message.message_id)
     elif call.data == 'storage:back':
         photo = open('images/main.jpg', 'rb')
         await bot.send_photo(photo=photo, chat_id=call.message.chat.id, reply_markup=main_markup)
         await bot.set_state(call.message.chat.id, States.main, call.message.chat.id)
+
+
+@bot.callback_query_handler(func=None, config=shop_callback.filter())
+async def shopping(call: types.CallbackQuery):
+    await bot.answer_callback_query(call.id, cache_time=1)
+    slt = "SELECT dust FROM users WHERE id=%s"
+    db_object.execute(slt, (call.message.chat.id,))
+    dust = db_object.fetchone()[0]
+    if call.data == 'item:youtube':
+        if dust >= 45:
+            upd = 'UPDATE users SET dust = dust - 45 WHERE id =%s'
+            db_object.execute(upd, (call.message.chat.id, ))
+            insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
+            db_object.execute(insert_st, ('yt for 30 minutes', call.message.chat.id, 3))
+            db_connection.commit()
+            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item yt for 30 minutes was '
+                                                                           f'successfully bought',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+        else:
+            await bot.edit_message_text(chat_id=call.message.chat.id, text='not enough dust to buy, go work!',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+    elif call.data == 'item:anime':
+        if dust >= 45:
+            upd = 'UPDATE users SET dust = dust - 45 WHERE id =%s'
+            db_object.execute(upd, (call.message.chat.id,))
+            insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
+            db_object.execute(insert_st, ('1 episode of anime', call.message.chat.id, 3))
+            db_connection.commit()
+            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item 1 episode of anime was '
+                                                                           f'successfully bought',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+        else:
+            await bot.edit_message_text(chat_id=call.message.chat.id, text='not enough dust to buy, go work!',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+    elif call.data == 'item:game':
+        if dust >= 45:
+            upd = 'UPDATE users SET dust = dust - 45 WHERE id =%s'
+            db_object.execute(upd, (call.message.chat.id,))
+            insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
+            db_object.execute(insert_st, ('1 game of 30 minutes of game time', call.message.chat.id, 3))
+            db_connection.commit()
+            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item 30 minutes of game time was '
+                                                                           f'successfully bought',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+        else:
+            await bot.edit_message_text(chat_id=call.message.chat.id, text='not enough dust to buy, go work!',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+    elif call.data == 'item:discord':
+        if dust >= 60:
+            upd = 'UPDATE users SET dust = dust - 60 WHERE id =%s'
+            db_object.execute(upd, (call.message.chat.id,))
+            insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
+            db_object.execute(insert_st, ('discord 40 minutes', call.message.chat.id, 3))
+            db_connection.commit()
+            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item discord 40 minutes was '
+                                                                           f'successfully bought',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+        else:
+            await bot.edit_message_text(chat_id=call.message.chat.id, text='not enough dust to buy, go work!',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+    if call.data == 'item:film':
+        if dust >= 100:
+            upd = 'UPDATE users SET dust = dust - 100 WHERE id =%s'
+            db_object.execute(upd, (call.message.chat.id,))
+            insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
+            db_object.execute(insert_st, ('film', call.message.chat.id, 4))
+            db_connection.commit()
+            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item film was '
+                                                                           f'successfully bought',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+        else:
+            await bot.edit_message_text(chat_id=call.message.chat.id, text='not enough dust to buy, go work!',
+                                        message_id=call.message.message_id, reply_markup=shop_markup)
+    elif call.data == 'item:back':
+        await bot.edit_message_text(chat_id=call.message.chat.id, text='you got to the storage which box should we '
+                                                                       'open?',
+                                    reply_markup=storage_markup, message_id=call.message.message_id)
 
 
 @bot.callback_query_handler(func=None, config=life_inventory_callback.filter())
@@ -578,7 +658,7 @@ async def life_inventory(call: types.CallbackQuery):
                                         reply_markup=life_inventory_rare_epic_markup)
         elif call.data == 'life_item_rarity:use':
             await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                                        text='something',
+                                        text='pick and use it. you did a great job',
                                         reply_markup=life_inventory_use_markup)
         elif call.data == 'life_item_rarity:back':
             await bot.edit_message_text(text='you got to the storage which box should we open?',
@@ -601,7 +681,7 @@ async def inventory_using(call: types.CallbackQuery):
                                     text=f'inventory:\n{show_inventory}',
                                     reply_markup=life_inventory_legendary_epic_markup)
     elif call.data == 'life_use:rare':
-        inventory_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        inventory_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
         db_object.execute(f'SELECT info FROM inventory WHERE id={call.message.chat.id} AND rarity=3')
         inventory = db_object.fetchall()
         if inventory:
@@ -616,27 +696,38 @@ async def inventory_using(call: types.CallbackQuery):
                         inventory_markup.add(item_list[smt], item_list[smt + 1])
                     else:
                         inventory_markup.add(item_list[smt])
+            inventory_markup.add(backbtn)
             await bot.send_message(chat_id=call.message.chat.id, text='choose an item', reply_markup=inventory_markup)
             await bot.set_state(chat_id=call.message.chat.id, state=States.life_inventory_using,
                                 user_id=call.message.chat.id)
         else:
             await bot.edit_message_text(chat_id=call.message.chat.id, text='nothing is here,work more!',
-                                        reply_markup=storage_markup, message_id=call.message.message_id)
+                                        reply_markup=life_inventory_use_markup, message_id=call.message.message_id)
     elif call.data == 'life_use:epic':
-        inventory_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        inventory_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
         db_object.execute(f'SELECT info FROM inventory WHERE id={call.message.chat.id} AND rarity=4')
         inventory = db_object.fetchall()
         if inventory:
+            item_list = []
             for item in inventory:
-                inventory_markup.add(types.KeyboardButton(text=item[0].strip()))
+                item_list.append(types.KeyboardButton(text=item[0].strip()))
+            for smt in range(0, len(item_list), 2):
+                if smt != len(item_list) - len(item_list) % 2:
+                    inventory_markup.add(item_list[smt], item_list[smt + 1])
+                else:
+                    if len(item_list) % 2 == 0:
+                        pass
+                    else:
+                        inventory_markup.add(item_list[smt])
+            inventory_markup.add(backbtn)
             await bot.send_message(chat_id=call.message.chat.id, text='choose an item', reply_markup=inventory_markup)
             await bot.set_state(chat_id=call.message.chat.id, state=States.life_inventory_using,
                                 user_id=call.message.chat.id)
         else:
             await bot.edit_message_text(chat_id=call.message.chat.id, text='nothing is here,work more!',
-                                        reply_markup=storage_markup, message_id=call.message.message_id)
+                                        reply_markup=life_inventory_use_markup, message_id=call.message.message_id)
     elif call.data == 'life_use:legendary':
-        inventory_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        inventory_markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
         db_object.execute(f'SELECT info FROM inventory WHERE id={call.message.chat.id} AND rarity=5')
         inventory = db_object.fetchall()
         if inventory:
@@ -651,21 +742,26 @@ async def inventory_using(call: types.CallbackQuery):
                         pass
                     else:
                         inventory_markup.add(item_list[smt])
+            inventory_markup.add(backbtn)
             await bot.send_message(chat_id=call.message.chat.id, text='choose an item', reply_markup=inventory_markup)
             await bot.set_state(chat_id=call.message.chat.id, state=States.life_inventory_using,
                                 user_id=call.message.chat.id)
         else:
             await bot.edit_message_text(chat_id=call.message.chat.id, text='nothing is here,work more!',
-                                        reply_markup=storage_markup, message_id=call.message.message_id)
+                                        reply_markup=life_inventory_use_markup, message_id=call.message.message_id)
 
 
 @bot.message_handler(state=States.life_inventory_using)
 async def inventory_item_used(message):
-    dlt = 'DELETE FROM inventory WHERE ctid in(select ctid from inventory where info = %s LIMIT 1)'
-    db_object.execute(dlt, (message.text,))
-    db_connection.commit()
-    await bot.send_message(chat_id=message.chat.id, text=f'{message.text.strip()} got successfully used',
-                           reply_markup=life_inventory_use_markup)
+    if message.text.strip() == '🚪Back':
+        await bot.send_message(chat_id=message.chat.id, text=f'returning to the use menu',
+                               reply_markup=life_inventory_use_markup)
+    else:
+        dlt = 'DELETE FROM inventory WHERE ctid in(select ctid from inventory where info = %s LIMIT 1)'
+        db_object.execute(dlt, (message.text,))
+        db_connection.commit()
+        await bot.send_message(chat_id=message.chat.id, text=f'{message.text.strip()} got successfully used',
+                               reply_markup=life_inventory_use_markup)
     await bot.set_state(chat_id=message.chat.id, state=States.main, user_id=message.chat.id)
 
 
