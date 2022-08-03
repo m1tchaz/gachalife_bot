@@ -452,7 +452,7 @@ async def wishing(call: types.CallbackQuery):
             db_object.execute(upd, (call.message.chat.id,))
             upd = 'UPDATE users SET dust = dust + 15 WHERE id= %s'
             db_object.execute(upd, (call.message.chat.id,))
-            drop = open('images\drop.jpg', 'rb')
+            drop = open('images/drop.jpg', 'rb')
             outcome = wish_processing('primogems')
             reward = wish_reward('primogems', outcome)
             db_object.execute(f'SELECT nickname FROM users WHERE id={call.from_user.id}')
