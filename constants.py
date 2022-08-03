@@ -33,7 +33,7 @@ rank_dict = {
 
 primogems_wish_outcome = {
     3: [
-        'free watch of youtube for 1 hour', '1 episode of anime', '2 episode of anime/show',
+        'free watch of youtube for 1 hour', '1 episode of anime', '2 episode of anime/1show',
         '1game/30 minutes of game time', 'discord/free 40 minutes', '2game/60 minutes of game time',
         'free watch of youtube for 30 minutes'
     ],
@@ -372,9 +372,9 @@ def wish_processing(wish_type):
     if wish_type == 'primogems':
         wished_number = random.randint(1, 10000)
         print(wished_number)
-        if wished_number < 3333:
+        if wished_number < 200:
             return 5
-        elif wished_number < 6666:
+        elif wished_number < 1200:
             return 4
         else:
             return 3

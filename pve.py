@@ -116,6 +116,7 @@ async def area_farming(message):
                 msg = await bot.send_message(message.chat.id, 'initiating the fight in 1 second', reply_markup=None)
                 await asyncio.sleep(1)
                 result_of_fight = await fight(hero, enemy, msg)
+                energy_update = 'UPDATE users SET energy = energy - 10 WHERE id =%s'
                 if result_of_fight:
                     lvl_slt = 'SELECT lvl FROM users WHERE id= %s'
                     db_object.execute(lvl_slt, (message.chat.id,))
@@ -145,7 +146,6 @@ async def area_farming(message):
                         upd_exp = 'UPDATE users set exp = %s WHERE id = %s'
                         db_object.execute(upd_exp, (new_exp, message.chat.id))
                         lvl = lvl + 1
-                    energy_update = 'UPDATE users SET energy = energy - 10 WHERE id =%s'
                     db_object.execute(energy_update, (message.chat.id,))
                     db_connection.commit()
                     await bot.edit_message_text(text='you won the fight\n\n'

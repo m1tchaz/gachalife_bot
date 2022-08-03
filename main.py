@@ -295,8 +295,12 @@ async def daily_done(message):
         energy_left = db_object.fetchone()[0]
         rank_exp_count = math.ceil(rank_exp_left / daily_left_count)
         energy_count = math.ceil(energy_left / daily_left_count)
-        energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy <= 100'
+        energy_update = 'UPDATE users SET energy = energy + %s WHERE id = %s AND energy <= 100 RETURNING energy'
         db_object.execute(energy_update, (energy_count, message.chat.id))
+        energy = db_object.fetchone()[0]
+        if energy + energy_count >= 100:
+            energy_update_100 = 'UPDATE users SET energy = 100 WHERE id = %s'
+            db_object.execute(energy_update_100, (message.chat.id, ))
         energy_left_update = 'UPDATE users SET energy_left = energy_left - %s where id= %s'
         db_object.execute(energy_left_update, (energy_count, message.chat.id))
         rank_slt = 'SELECT rank FROM users WHERE id = %s'
@@ -595,14 +599,14 @@ async def shopping(call: types.CallbackQuery):
         else:
             await bot.edit_message_text(chat_id=call.message.chat.id, text='not enough dust to buy, go work!',
                                         message_id=call.message.message_id, reply_markup=shop_markup)
-    elif call.data == 'item:discord':
+    elif call.data == 'item:social':
         if dust >= 60:
             upd = 'UPDATE users SET dust = dust - 60 WHERE id =%s'
             db_object.execute(upd, (call.message.chat.id,))
             insert_st = 'INSERT INTO inventory(info,id,rarity) VALUES (%s,%s,%s)'
-            db_object.execute(insert_st, ('discord 40 minutes', call.message.chat.id, 3))
+            db_object.execute(insert_st, ('social media 40 minutes', call.message.chat.id, 3))
             db_connection.commit()
-            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item discord 40 minutes was '
+            await bot.edit_message_text(chat_id=call.message.chat.id, text=f'the item social media 40 minutes was '
                                                                            f'successfully bought',
                                         message_id=call.message.message_id, reply_markup=shop_markup)
         else:

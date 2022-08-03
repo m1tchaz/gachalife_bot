@@ -167,14 +167,14 @@ anime_shop_btn = types.InlineKeyboardButton(text='1 anime - 45',
                                             callback_data=shop_callback.new(shop_item='anime'))
 game_shop_btn = types.InlineKeyboardButton(text='30 minutes of game time - 45',
                                            callback_data=shop_callback.new(shop_item='game'))
-discord_shop_btn = types.InlineKeyboardButton(text='discord 40 minutes - 60',
-                                              callback_data=shop_callback.new(shop_item='discord'))
+social_shop_btn = types.InlineKeyboardButton(text='social media 40 minutes - 60',
+                                              callback_data=shop_callback.new(shop_item='social'))
 film_shop_btn = types.InlineKeyboardButton(text='film - 100',
                                            callback_data=shop_callback.new(shop_item='film'))
 back_shop_btn = types.InlineKeyboardButton(text='🚪Back', callback_data=shop_callback.new(shop_item='back'))
 shop_markup = types.InlineKeyboardMarkup(keyboard=[
     [youtube_shop_btn, anime_shop_btn],
-    [game_shop_btn, discord_shop_btn],
+    [game_shop_btn, social_shop_btn],
     [film_shop_btn],
     [back_shop_btn]
 ])
