@@ -96,7 +96,7 @@ async def main_menu(message):
     elif message.text.strip() == 'commissions ⚛':
         dailies = ''
         typiki = ['physics', 'wisdom', 'intelligence', 'health']
-        cool_typiki = ['💪physics', '🎩wisdom', '🧠intelligence', '🫁health']
+        cool_typiki = ['💪 physics', '🎩 wisdom', '🧠 intelligence', '🫁 health']
         count = 0
         for value in typiki:
             dailies_list = ''
@@ -104,9 +104,10 @@ async def main_menu(message):
             db_object.execute(slt, (message.chat.id, value))
             res = db_object.fetchall()
             for number, result in enumerate(res):
-                dailies_list += f'{number + 1}.' + f' {result[0]}'
+                dailies_list += f'{number + 1}.' + f' {result[0].strip()}' + '\n'
             dailies += f'{cool_typiki[count]}:\n' + dailies_list + '\n'
             count += 1
+        print(len(dailies))
         await bot.send_message(message.chat.id, f'list of uncompleted dailies \n\n{dailies}', reply_markup=daily_markup)
         await bot.set_state(message.chat.id, States.dailies_main, chat_id=message.chat.id)
 
